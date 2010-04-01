@@ -2,7 +2,7 @@
 ##
 ## PROJECT         DDR-SDRAM Controller Core
 ##
-## DATE            $Date: 2002/12/20 15:10:41 $
+## DATE            $Date: 2003/03/19 06:43:40 $
 ##
 ## LANGUAGE        VHDL 93
 ##
@@ -52,30 +52,12 @@
 # Specifying global clock period
 net "clk"     period = 100 MHz ;
 
-# Timegroups
-timegrp "rising_ffs"  = rising ffs;
-timegrp "falling_ffs" = falling ffs;
-
-# All DDR-SDRAM Control- and Address-Lines (Outputs)
-timespec ts1 = from rising_ffs to falling_ffs 5 ns;
-
-# Data Read (Inputs)
-timespec ts2 = from falling_ffs to rising_ffs 5 ns;
-
-# Tristate FFs are clocked with the sys_clk270
-timespec ts3 = from ffs("*z_q*") to ffs("*tristate_q*") 5 ns;
-
-# max 75% of the global clock period for data to DDR-FFS
-timespec ts4 = from FFS("*shift_q<*>") to FFS 7 ns;
-
-timespec ts5 = from FFS to PADS 6 ns;
+net "*sys_reset_1_q" MAXDELAY = 10 ns;
+net "*sys_reset_1_q" TIG;
 
 # The following timespec is only for demonstration of P&R,
 # All Core DDR SDRAM I/Os should use IOB-FFs !
-timespec ts6 = from FFS to PADS 10 ns; 
-
-# Because clk of component(RESET) and Block(INIT) is different
-timespec ts7 = from FFS("*sys_reset*") to FFS 10 ns;
+timespec ts_non = from FFS to PADS 10 ns; 
 
 # location constraints (this is an example !)
 NET a_q<0> LOC=B18; 

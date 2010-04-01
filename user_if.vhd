@@ -9,7 +9,7 @@
 -- SIMULATOR       Model Technology ModelSim 5.4
 -- COMPILER        Exemplar Leonardo Spectrum 2001.1d
 --
--- DATE            $Date: 2002/12/20 15:11:24 $
+-- DATE            $Date: 2003/03/04 08:29:07 $
 --
 -- LANGUAGE        VHDL 93
 --
@@ -95,8 +95,7 @@ architecture behave of user_if is
    signal cmd_int_q       : std_logic_vector(U_CMD_WIDTH -1 downto 0);
    signal busy_int_q      : boolean;
    
-   -- Store ROW and BANK
-   signal row_q : std_logic_vector(DDR_ADDR_WIDTH + DDR_BANK_WIDTH -1 downto 0); 
+   signal row_q : std_logic_vector(DDR_ADDR_WIDTH + DDR_BANK_WIDTH downto 0); 
    
    -- Refresh flags
    signal do_rfsh_q       : boolean;
@@ -108,7 +107,7 @@ architecture behave of user_if is
 begin
 
    process (sys_clk, rst_int_n) is
-      variable new_row : std_logic_vector(DDR_ADDR_WIDTH + DDR_BANK_WIDTH -1 downto 0);
+      variable new_row : std_logic_vector(DDR_ADDR_WIDTH + DDR_BANK_WIDTH downto 0);
    begin 
       if rst_int_n = '0' then  
 
@@ -128,7 +127,7 @@ begin
       elsif rising_edge(sys_clk) then
 
          -- extract ROW from user address
-         new_row := addr(addr_int_q'LEFT downto DDR_ADDR_WIDTH);
+         new_row := '0' & addr(addr_int_q'LEFT downto DDR_ADDR_WIDTH);
          
          internal_rfsh_q <= false;
 
@@ -150,23 +149,29 @@ begin
             when READY =>
                rfsh_now_q <= rfsh_req_q;
                -- Refresh has highest priority
-               if rfsh_now_q then
+               if cmd_vld='1' then -- new command requested
+                  busy_int_q    <= true;
+                  new_cmd_q     <= true;
+                  state_q       <= BUSY;
+               elsif rfsh_now_q then
                   busy_int_q    <= true;
                   new_cmd_q     <= true;
                   do_rfsh_q     <= true; -- Switch CMD-MUX to Refresh Command
                   state_q       <= REFRESH;
-               elsif cmd_vld='1' then -- new command requested
-                  busy_int_q    <= true;
-                  new_cmd_q <= true;
-                  state_q       <= BUSY;
                end if;
             
             when BUSY =>
                if new_cmd_ack then
-                  new_cmd_q <= false;
-                  state_q       <= READY;
-                  -- busy must stay active in case of resfresh, otherwise one command may be lost
-                  busy_int_q <= rfsh_now_q;
+                  if rfsh_now_q then
+                     new_cmd_q     <= true;
+                     do_rfsh_q     <= true; -- Switch CMD-MUX to Refresh Command
+                     state_q       <= REFRESH;
+                  else
+                     new_cmd_q  <= false;
+                     state_q    <= READY;
+                     busy_int_q <= false;
+                  end if;
+                  
                end if;
                
             when REFRESH =>
@@ -192,7 +197,7 @@ begin
                if row_q /= new_row then -- new ROW requested, do precharge followed by activate
                   do_prech_q  <= true;    -- Precharge, Activate
                   do_wait_q   <= true;    -- tWR !
-                  row_q       <= new_row; -- store this row
+                  row_q       <= new_row; -- store this row and clear the 'first access' bit
                else
                   do_prech_q  <= false;
                   do_wait_q   <= false; -- tWR !

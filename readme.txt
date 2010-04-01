@@ -6,7 +6,7 @@
 --                 markus@opencores.org
 --                 www.array-electronics.de
 --
--- DATE            $Date: 2003/01/08 14:58:27 $
+-- DATE            $Date: 2003/03/19 06:53:31 $
 --
 -- ABSTRACT        Documentation File for the
 --                 DDR SDRAM Controller Core
@@ -46,6 +46,14 @@
 -- DAMAGE.                              
 ----------------------------------------------------------------------------
 
+-- $Log: readme.txt,v $
+-- Revision 1.1.2.2  2003/03/19 06:53:31  markus
+-- Version 1.1: Bugfix User Interface,
+-- simplified timing constraints
+--
+-- Revision 1.1.2.1  2003/01/08 14:58:27  markus
+-- Initial Opencores Revision
+--
 
 Contents
 ---------
@@ -363,8 +371,9 @@ clk_fb      e.g. F13
 
 *  The IOB delay element of all input signals should be switched OFF, using NODELAY
 
-*  Several timing constraints must be used for design implementation. You may copy these contraints
-   as well as the IOB-constraints from the example UCF-File <ddr_sdr.ucf>
+*  A global period timespec and an additional timespec for the reset path is sufficient
+   for the entire core implementation.
+   You may copy these contraints as well as the IOB-constraints from the example UCF-File <ddr_sdr.ucf>
    
 *  The DDR SDRAM Controller design is synthesizable with XILINX XST synthesis tool when using
    the following option : ... -equivalent_register_removal No

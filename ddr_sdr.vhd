@@ -9,7 +9,7 @@
 -- SIMULATOR       Model Technology ModelSim 5.4
 -- COMPILER        Exemplar Leonardo Spectrum 2001.1d
 --
--- DATE            $Date: 2003/01/10 07:48:18 $
+-- DATE            $Date: 2003/03/19 06:45:13 $
 --
 -- LANGUAGE        VHDL 93
 --
@@ -179,7 +179,7 @@ begin
    init: block
       signal rst_in : std_logic;
       signal srst_clk_q, srst_q : std_logic;
-      signal sys_reset_q : std_logic;
+      signal sys_reset_q, sys_reset_1_q : std_logic;
       signal dcm1_locked_q, dcm2_locked_q : std_logic_vector(2 downto 0);
       signal cnt_q : unsigned(4 downto 0);
       type STATE_TYPE is (s0, s1, s2, s3, s4);
@@ -200,7 +200,7 @@ begin
       reset2: entity work.reset
          port map (
             clk    => sys_clk,
-            rst_in => sys_reset_q,
+            rst_in => sys_reset_1_q,
             srst_q => srst_q );
 
       srst_sys_q <= srst_q;
@@ -211,7 +211,7 @@ begin
             case state_q is
                when s0 =>
                   state_q <= s1;
-                  sys_reset_q <= '1' after 1 ns;
+                  sys_reset_q <= '1'; -- after 1 ns;
                   dcm_rst_q <= '0';
                   cnt_q <= "11111";
                   
@@ -242,6 +242,7 @@ begin
                   end if;
                   
             end case;
+            sys_reset_1_q <= sys_reset_q;
 
             -- synchronize 'dcm1_locked'
             dcm1_locked_q <= dcm1_locked_q(1 downto 0) & locked(0);
@@ -454,7 +455,7 @@ begin
             ld_del_cnt_q <= false;
             w_srg_q      <= (others=>'0');
             mux_q        <= NORMAL;
-            shift_q      <= (others=>(others=>'0'));
+            shift_q(0)   <= (others=>'0');
             row_adr_q    <= (others=>'0');
             col_adr_q    <= (others=>'0');
             tras_cnt_q    <= 0;
@@ -740,10 +741,6 @@ begin
                shift_q(0) <= data_in; -- 2 clocks delayed MUX signal
             end if;
             
-            if wr_ena3_q='1' then
-               shift_q(1) <= shift_q(0);
-            end if;
-            
             -- Read Control Signals
             if start_rd then
                rd_ena_q <= true;
@@ -784,6 +781,15 @@ begin
                w_srg_q <= '0' & w_srg_q(w_srg_q'LEFT downto 1);
             end if;
 
+         end if;
+      end process;
+
+      process(sys_clk, rst_int_n)
+      begin
+         if rst_int_n='0' then
+            shift_q(1) <= (others=>'0');
+         elsif falling_edge(sys_clk) then
+            shift_q(1) <= shift_q(0);
          end if;
       end process;
       
